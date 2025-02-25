@@ -10,6 +10,7 @@ else:
 
 BOT_TOKEN = os.getenv('bot_token')
 ADMINS = {int(i) for i in os.getenv('admins_id').split()}
+MAIN_CHANNEL = os.getenv('main_channel')
 
 # logging.basicConfig(
 #     filename='bot.log',
