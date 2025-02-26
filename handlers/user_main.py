@@ -38,6 +38,11 @@ async def get_user_stats(user_id):
     return user_stars, user_ref_count
 
 
+@users_router.message(Command('test'))
+async def test(msg: Message):
+    pass
+
+
 @users_router.message(Command('start'))
 async def start_func(msg: Message, state: FSMContext):
     """В самом начале делаем все проверки на реферера.

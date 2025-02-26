@@ -17,7 +17,18 @@ class BotBase:
                            'referral TEXT'
                            ');')
 
+            # Таблица с заданиями
+            cursor.execute('CREATE TABLE IF NOT EXISTS tasks_list ('
+                           'task_id INTEGER PRIMARY KEY, '
+                           'channels_list TEXT, '
+                           'who_complete TEXT DEFAULT empty'
+                           ');')
+
             connection.commit()
+
+    # ====================
+    # Пользователи
+    # ====================
 
     @staticmethod
     async def add_new_user(user_id):
@@ -50,3 +61,16 @@ class BotBase:
             cursor.execute(f"UPDATE all_users "
                            f"SET stars = stars + {stars} "
                            f"WHERE user_id = {user_id};")
+
+    # ====================
+    # Задания
+    # ====================
+
+    @staticmethod
+    async def add_new_task(task_id, channels_list):
+        """Вставляем новую задачу"""
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f'INSERT INTO tasks_list (task_id, channels_list) '
+                           f'VALUES ({task_id}, "{channels_list}")')
+            connection.commit()
