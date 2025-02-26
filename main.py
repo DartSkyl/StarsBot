@@ -5,6 +5,7 @@ import handlers  # noqa
 from loader import dp, bot, base_load
 from utils.admin_router import admin_router
 from utils.user_router import users_router
+from utils.task_model import task_manager
 
 
 async def start_up():
@@ -13,6 +14,7 @@ async def start_up():
     dp.include_router(users_router)
 
     await base_load()
+    await task_manager.load_task_list_from_db()
 
     with open('bot.log', 'a') as log_file:
         log_file.write(f'\n========== New bot session {datetime.datetime.now()} ==========\n\n')

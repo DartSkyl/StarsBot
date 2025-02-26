@@ -83,3 +83,10 @@ class BotBase:
             cursor.execute(f"UPDATE tasks_list "
                            f"SET who_complete =  {who_complete_str} "
                            f"WHERE task_id = {task_id};")
+
+    @staticmethod
+    async def get_all_tasks():
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            task_list = cursor.execute(f'SELECT * FROM tasks_list;').fetchall()
+            return task_list
