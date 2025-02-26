@@ -13,7 +13,7 @@ class BotBase:
             # Таблица со всеми пользователями
             cursor.execute('CREATE TABLE IF NOT EXISTS all_users ('
                            'user_id INTEGER PRIMARY KEY,'
-                           'stars INT DEFAULT 1,'
+                           'stars INT DEFAULT 100,'  # Всегда делить на 100
                            'referral TEXT'
                            ');')
 
@@ -41,4 +41,12 @@ class BotBase:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE all_users "
                            f"SET referral = '{new_ref_list}' "
+                           f"WHERE user_id = {user_id};")
+
+    @staticmethod
+    async def star_rating(user_id, stars):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE all_users "
+                           f"SET stars = stars + {stars} "
                            f"WHERE user_id = {user_id};")
