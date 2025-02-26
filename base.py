@@ -34,3 +34,11 @@ class BotBase:
             cursor = connection.cursor()
             user_info = cursor.execute(f'SELECT * FROM all_users WHERE user_id = {user_id};').fetchall()
             return user_info
+
+    @staticmethod
+    async def save_referer(user_id, new_ref_list):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE all_users "
+                           f"SET referral = '{new_ref_list}' "
+                           f"WHERE user_id = {user_id};")
