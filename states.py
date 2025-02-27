@@ -14,3 +14,6 @@ class AdminStates(StatesGroup):
     preview_new_task = State()
     edit_channels = State()
     edit_reward = State()
+    task_edit_menu = State()
+    edit_channels_menu = State()
+    edit_reward_menu = State()

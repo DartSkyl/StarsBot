@@ -54,6 +54,7 @@ class BotBase:
             cursor.execute(f"UPDATE all_users "
                            f"SET referral = '{new_ref_list}' "
                            f"WHERE user_id = {user_id};")
+            connection.commit()
 
     @staticmethod
     async def star_rating(user_id, stars):
@@ -62,6 +63,7 @@ class BotBase:
             cursor.execute(f"UPDATE all_users "
                            f"SET stars = stars + {stars} "
                            f"WHERE user_id = {user_id};")
+            connection.commit()
 
     # ====================
     # Задания
@@ -81,8 +83,9 @@ class BotBase:
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE tasks_list "
-                           f"SET who_complete =  {who_complete_str} "
+                           f"SET who_complete =  '{who_complete_str}' "
                            f"WHERE task_id = {task_id};")
+            connection.commit()
 
     @staticmethod
     async def get_all_tasks():
@@ -90,3 +93,28 @@ class BotBase:
             cursor = connection.cursor()
             task_list = cursor.execute(f'SELECT * FROM tasks_list;').fetchall()
             return task_list
+
+    @staticmethod
+    async def delete_task(task_id):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"DELETE FROM tasks_list WHERE task_id = {task_id};")
+            connection.commit()
+
+    @staticmethod
+    async def edit_task_channels(task_id, new_channels):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE tasks_list "
+                           f"SET channels_list =  '{new_channels}' "
+                           f"WHERE task_id = {task_id};")
+            connection.commit()
+
+    @staticmethod
+    async def edit_task_reward(task_id, reward):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE tasks_list "
+                           f"SET reward =  '{reward}' "
+                           f"WHERE task_id = {task_id};")
+            connection.commit()
