@@ -7,7 +7,7 @@ from aiogram import F
 from aiogram.fsm.context import FSMContext
 
 from utils.admin_router import admin_router
-from utils.task_model import task_manager
+from utils.task_manager import task_manager
 from keyboards import main_menu_admin, edit_new_task, task_menu, task_keys, edit_task
 from states import AdminStates
 from loader import bot, bot_base

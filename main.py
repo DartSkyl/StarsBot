@@ -5,7 +5,7 @@ import handlers  # noqa
 from loader import dp, bot, base_load
 from utils.admin_router import admin_router
 from utils.user_router import users_router
-from utils.task_model import task_manager
+from utils.task_manager import task_manager
 
 
 async def start_up():

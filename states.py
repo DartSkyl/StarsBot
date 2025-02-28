@@ -6,6 +6,8 @@ class UserStates(StatesGroup):
     first_contact = State()
     uniq_ref = State()
 
+    executor = State()
+
 
 class AdminStates(StatesGroup):
     """Класс стэйтов для админов"""

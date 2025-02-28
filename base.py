@@ -14,15 +14,15 @@ class BotBase:
             cursor.execute('CREATE TABLE IF NOT EXISTS all_users ('
                            'user_id INTEGER PRIMARY KEY,'
                            'stars INT DEFAULT 100,'  # Всегда делить на 100
-                           'referral TEXT'
-                           ');')
+                           'referer INTEGER DEFAULT 0,'  # Будем записывать каждому того, кто его привел
+                           'referral_count INTEGER DEFAULT 0);')
 
             # Таблица с заданиями
             cursor.execute('CREATE TABLE IF NOT EXISTS tasks_list ('
                            'task_id INTEGER PRIMARY KEY, '
                            'channels_list TEXT,'
                            'reward INT,  '  # Всегда делить на 100
-                           'who_complete TEXT DEFAULT empty'
+                           'who_complete TEXT'
                            ');')
 
             connection.commit()
@@ -32,12 +32,19 @@ class BotBase:
     # ====================
 
     @staticmethod
-    async def add_new_user(user_id):
+    async def add_new_user(user_id, referer_id):
         """Вставляем сразу все столбцы"""
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
-            cursor.execute(f'INSERT INTO all_users (user_id, referral) '
-                           f'VALUES ({user_id}, "empty")')
+
+            cursor.execute(f'INSERT INTO all_users (user_id, referer) '
+                           f'VALUES ({user_id}, {referer_id})')
+
+            # И сразу посчитаем рефереру его сучку
+            cursor.execute(f"UPDATE all_users "
+                           f"SET referral_count = referral_count + 1 "
+                           f"WHERE user_id = {referer_id};")
+
             connection.commit()
 
     @staticmethod
@@ -46,15 +53,6 @@ class BotBase:
             cursor = connection.cursor()
             user_info = cursor.execute(f'SELECT * FROM all_users WHERE user_id = {user_id};').fetchall()
             return user_info
-
-    @staticmethod
-    async def save_referer(user_id, new_ref_list):
-        with sqlite3.connect('stars_base.db') as connection:
-            cursor = connection.cursor()
-            cursor.execute(f"UPDATE all_users "
-                           f"SET referral = '{new_ref_list}' "
-                           f"WHERE user_id = {user_id};")
-            connection.commit()
 
     @staticmethod
     async def star_rating(user_id, stars):
