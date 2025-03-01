@@ -1,6 +1,7 @@
 import random
 import os
 import asyncio
+from sqlite3 import IntegrityError
 
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
@@ -35,15 +36,23 @@ async def is_digits(s):
 
 async def get_user_stats(user_id):
     """Достаем звезды и рефералов из БД"""
-    user_data = (await bot_base.get_user(user_id))[0]
-    user_stars = user_data[1] / 100
-    user_ref_count = user_data[3]
-    return user_stars, user_ref_count
+    try:
+        user_data = (await bot_base.get_user(user_id))[0]
+        user_stars = int(user_data[1]) / 100
+        user_ref_count = user_data[3]
+        return user_stars, user_ref_count
+    except IndexError:
+        return 0, 0
 
 
-# @users_router.message(Command('test'))
-# async def test(msg: Message):
-#     pass
+async def forming_str_from_txt_file(file_str: str, **kwargs):
+    """Формируем строку для сообщения из файла"""
+    new_file_str = (file_str.
+                    replace('\{', '{')
+                    .replace('\}', '}')
+                    .replace('\_', '_')
+                    .format(**kwargs))
+    return new_file_str
 
 
 # ====================
@@ -51,6 +60,7 @@ async def get_user_stats(user_id):
 # ====================
 
 
+@users_router.message(F.text == '⭐️ Заработать звезды')
 @users_router.message(Command('start'))
 async def start_func(msg: Message, state: FSMContext):
     """В самом начале делаем все проверки на реферера.
@@ -65,37 +75,72 @@ async def start_func(msg: Message, state: FSMContext):
     # Проверяем подписку на канал
     is_member = await bot.get_chat_member(chat_id=MAIN_CHANNEL, user_id=msg.from_user.id)
     # И есть ли в базе
-    user = len(await bot_base.get_user(msg.from_user.id)) > 0
-
-    if not user and not isinstance(is_member, ChatMemberLeft):
+    user = await bot_base.get_user(msg.from_user.id)
+    if not len(user) > 0 and not isinstance(is_member, ChatMemberLeft):
 
         random_result = await get_random_fruit_emoji()  # Возвращается кортеж
 
-        # Храним все сообщения для пользователей в отдельных файлах
-        with open(os.path.join('messages', 'first_contact.txt'), encoding='utf-8') as file:
-            msg_text = file.read().format(correct_answer=random_result[0])
+        # Храним все сообщения для пользователей в базе
 
+        msg_text = (await bot_base.settings_get('first_contact'))[1]
+        msg_text = await forming_str_from_txt_file(msg_text, correct_answer=random_result[0])
         await msg.answer(msg_text,
                          reply_markup=await random_keyboards(
                              user_id=msg.from_user.id,
                              correct_answer=random_result[0],
                              random_fruit_mass=random_result[1]
                          ))
-        if referer_id != 0:
-            await bot_base.star_rating(referer_id, 25)
-        await state.set_data({'referer_id': referer_id})
+        is_pay = (await state.get_data()).get('is_pay')
+        try:
+            await bot_base.add_new_user(msg.from_user.id, referer_id)
+            if referer_id != 0 and not is_pay:
+                await bot_base.star_rating(referer_id, 25)
+        except IntegrityError:
+            pass
+
+        await state.set_data({'referer_id': referer_id, 'is_pay': True})
         await state.set_state(UserStates.first_contact)
 
-    elif not user:
-        await msg.answer(f'Сначала нужно подписаться на канал {MAIN_CHANNEL}')
+    elif isinstance(is_member, ChatMemberLeft):
+        try:
+            await bot_base.add_new_user(msg.from_user.id, referer_id)
+            if referer_id != 0:
+                await bot_base.star_rating(referer_id, 25)
+                await state.set_data({'is_pay': True, 'referer_id': referer_id})
+        except IntegrityError:
+            pass
 
-    else:
-        ref_url = f'https://t.me/{BOT_USERNAME}?start={msg.from_user.id}'
-        with open(os.path.join('messages', 'main_menu_message.txt'), encoding='utf-8') as file:
-            user_stat = await get_user_stats(msg.from_user.id)  # Кортеж
-            msg_text = file.read().format(ref_url=ref_url, stars_count=user_stat[0], ref_count=user_stat[1])
+        await msg.answer(f'Сначала нужно подписаться на канал {MAIN_CHANNEL}', parse_mode='HTML')
+
+    elif user[0][4] != 'False':
+        ref_url = f'https://t\.me/{BOT_USERNAME}?start\={msg.from_user.id}'
+
+        user_stat = await get_user_stats(msg.from_user.id)  # Кортеж
+        msg_text = (await bot_base.settings_get('main_menu_message'))[1]
+        msg_text = await forming_str_from_txt_file(
+            msg_text,
+            ref_url=ref_url,
+            stars_count=str(user_stat[0]).replace('.', '\.'),
+            ref_count=user_stat[1]
+            )
+
         await msg.answer(msg_text, reply_markup=main_menu_user)
         await state.clear()
+    else:
+        random_result = await get_random_fruit_emoji()  # Возвращается кортеж
+
+        # Храним все сообщения для пользователей в базе
+
+        msg_text = (await bot_base.settings_get('first_contact'))[1]
+        msg_text = await forming_str_from_txt_file(msg_text, correct_answer=random_result[0])
+        await msg.answer(msg_text,
+                         reply_markup=await random_keyboards(
+                             user_id=msg.from_user.id,
+                             correct_answer=random_result[0],
+                             random_fruit_mass=random_result[1]
+                         ))
+        await state.set_data({'referer_id': referer_id, 'is_pay': True})
+        await state.set_state(UserStates.first_contact)
 
 
 @users_router.callback_query(UserStates.first_contact, F.data.startswith('correct_'))
@@ -105,9 +150,11 @@ async def catch_correct_answer(callback: CallbackQuery, state: FSMContext):
     referer_id = (await state.get_data())['referer_id']  # Кому за прохождение капчи?
     if referer_id != 0:
         await bot_base.star_rating(referer_id, 75)
-    await bot_base.add_new_user(callback.from_user.id, referer_id)
-    with open(os.path.join('messages', 'welcome_message.txt'), encoding='utf-8') as file:
-        msg_text = file.read()
+
+    await bot_base.captcha_execute(callback.from_user.id)
+    msg_text = (await bot_base.settings_get('welcome_message'))[1]
+
+    msg_text = await forming_str_from_txt_file(msg_text)
     await callback.message.answer(msg_text, reply_markup=main_menu_user)
 
     await state.clear()
@@ -134,24 +181,43 @@ async def get_profit_to_executor(user_id, task_id):
         await bot_base.star_rating(referer_id, (task.reward / 100 * ref_percent))
 
 
+async def escape_special_chars(text):
+    """Экранирует все специальные символы в строке."""
+    escaped = ''
+    for char in text:
+        if char in '_*[]()~`>#+-=|{}.!':
+            escaped += '\\' + char
+        else:
+            escaped += char
+    return escaped
+
+
 @users_router.message(F.text == '🎯 Задания')
 async def open_user_task_menu(msg: Message, state: FSMContext):
     """Открываем меню выполнения заданий"""
     try:
 
         task_generator = task_manager.task_generator()
-        task = await anext(task_generator)
-        await state.set_data({'task_id': task.task_id, 'task_generator': task_generator})
+        async for task in task_generator:
+            if not await task.check_execute(msg.from_user.id):
+                await state.set_data({'task_id': task.task_id, 'task_generator': task_generator})
 
-        await state.set_state(UserStates.executor)
+                await state.set_state(UserStates.executor)
 
-        task_channels_str = '\n'.join(task.channels_list)
-        task_str = (f'Каналы для подписки:\n\n{task_channels_str}\n\n'
-                    f'Вознаграждение: {int(task.reward) / 100}\n\n')
+                task_channels_str = '\n'.join(task.channels_list)
+                task_str = (f'Каналы для подписки:\n\n{task_channels_str}\n\n'
+                            f'Вознаграждение: {int(task.reward) / 100}\n\n')
+                task_str = await escape_special_chars(task_str)
 
-        with open(os.path.join('messages', 'user_task_menu.txt'), encoding='utf-8') as file:
-            msg_text = file.read().format(task_str=task_str)
-        await msg.answer(msg_text, reply_markup=await user_task_menu())
+                # with open(os.path.join('messages', 'user_task_menu.txt'), encoding='utf-8') as file:
+                #     msg_text = file.read()
+                msg_text = (await bot_base.settings_get('user_task_menu'))[1]
+                msg_text = await forming_str_from_txt_file(msg_text, task_str=task_str)
+                await msg.answer(msg_text, reply_markup=await user_task_menu(task.task_id))
+                break
+        else:
+            await state.clear()
+            await msg.answer('На данный момент заданий нет')
 
     except IndexError:
         await msg.answer('На данный момент заданий нет')
@@ -159,24 +225,35 @@ async def open_user_task_menu(msg: Message, state: FSMContext):
         await msg.answer('На данный момент заданий нет')
 
 
-@users_router.callback_query(UserStates.executor, F.data == 'execute')
+@users_router.callback_query(UserStates.executor, F.data.startswith('execute_'))
 async def check_user_task_complete(callback: CallbackQuery, state: FSMContext):
     """Проверяем выполнение задания"""
-    await callback.answer()
     task_id = (await state.get_data())['task_id']
+    req_task_id = int(callback.data.replace('execute_', ''))
 
-    # Возвращается кортеж - кол-во каналов, список исполненных
-    check_execute = await task_manager.check_execution(callback.from_user.id, task_id)
+    if task_id == req_task_id:
 
-    if check_execute[0] == len(check_execute[1]):  # Значит выполнил
+        # Возвращается кортеж - кол-во каналов, список исполненных
+        check_execute = await task_manager.check_execution(callback.from_user.id, task_id)
 
-        await get_profit_to_executor(callback.from_user.id, task_id)
+        if check_execute[0] == len(check_execute[1]):  # Значит выполнил
+            await callback.answer()
+            await get_profit_to_executor(callback.from_user.id, task_id)
 
-        await callback.message.edit_text('Задание выполнено')
-        await skip_task(callback, state)
+            await callback.message.edit_text('Задание выполнено')
+            await skip_task(callback, state)
 
-    else:
-        await callback.message.answer('Задание не выполнено')
+        else:
+            await callback.answer('Задание не выполнено\nОбратите внимание на оставшиеся каналы!')
+            origin_msg_text = callback.message.text
+            origin_msg_text = origin_msg_text.replace('Каналы для подписки:', 'Оставшиеся каналы:')
+            for ch in check_execute[1]:
+                if ch in origin_msg_text:
+                    origin_msg_text = origin_msg_text.replace(('\n' + ch), '')
+            try:
+                await callback.message.edit_text(origin_msg_text, reply_markup=await user_task_menu(task_id))
+            except TelegramBadRequest:
+                pass
 
 
 @users_router.callback_query(UserStates.executor, F.data == 'skip')
@@ -185,16 +262,26 @@ async def skip_task(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     try:
         task_generator = (await state.get_data())['task_generator']
-        task = await anext(task_generator)
-        await state.update_data({'task_id': task.task_id, 'task_generator': task_generator})
 
-        task_channels_str = '\n'.join(task.channels_list)
-        task_str = (f'Каналы для подписки:\n\n{task_channels_str}\n\n'
-                    f'Вознаграждение: {int(task.reward) / 100}\n\n')
+        async for task in task_generator:
+            if not await task.check_execute(callback.from_user.id):
+                await state.update_data({'task_id': task.task_id, 'task_generator': task_generator})
 
-        with open(os.path.join('messages', 'user_task_menu.txt'), encoding='utf-8') as file:
-            msg_text = file.read().format(task_str=task_str)
-        await callback.message.answer(msg_text, reply_markup=await user_task_menu())
+                task_channels_str = '\n'.join(task.channels_list)
+                task_str = (f'Каналы для подписки:\n\n{task_channels_str}\n\n'
+                            f'Вознаграждение: {int(task.reward) / 100}\n\n')
+                task_str = await escape_special_chars(task_str)
+                # with open(os.path.join('messages', 'user_task_menu.txt'), encoding='utf-8') as file:
+                #     msg_text = file.read()
+                msg_text = (await bot_base.settings_get('user_task_menu'))[1]
+                msg_text = await forming_str_from_txt_file(msg_text, task_str=task_str)
+                await callback.message.answer(msg_text, reply_markup=await user_task_menu(task.task_id))
+                break
+
+        else:
+            await state.clear()
+            await callback.message.answer('Других заданий пока нет')
+
     except IndexError:
         await callback.message.answer('Других заданий пока нет')
     except TelegramBadRequest:

@@ -3,8 +3,8 @@ from aiogram.utils.keyboard import ReplyKeyboardMarkup
 
 
 main_menu_admin = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='Задания')], [KeyboardButton(text='Пользователи')],
-    [KeyboardButton(text='Статистика'),  KeyboardButton(text='Звезды')]
+    [KeyboardButton(text='Задания')], [KeyboardButton(text='Пользователи и статистика')],
+    [KeyboardButton(text='Настройки сообщений'),  KeyboardButton(text='Звезды')]
         ], resize_keyboard=True)
 
 

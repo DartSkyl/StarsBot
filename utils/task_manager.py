@@ -1,6 +1,6 @@
 import time
 from typing import List
-import  random
+import random
 
 from aiogram.types import ChatMemberLeft
 
@@ -9,7 +9,7 @@ from loader import bot_base, bot
 
 class TaskModel:
     """Класс для реализации контейнера для "Заданий" """
-    def __init__(self, channels_list: List[str], reward: int, task_id=int(time.time()), who_complete=None):
+    def __init__(self, channels_list: List[str], reward: int, task_id: int, who_complete=None):
         self.task_id: int = task_id  # Каждый ID это секунды создания
         # Список для каналов на которые нужно подписаться для выполнения задания
         self.channels_list: List[str] = channels_list
@@ -36,8 +36,8 @@ class TaskModel:
         return [int(i) for i in self.who_complete]
 
     async def check_execute(self, user_id: int):
-        """Проверяем, выполняли пользователь задачу"""
-        return True if user_id in self.who_complete else False
+        """Проверяем, выполнял ли пользователь задачу"""
+        return True if str(user_id) in self.who_complete else False
 
     async def edit_task(self, new_channels: List[str] = None, reward: int = None):
         """Изменяем задание"""
@@ -97,7 +97,8 @@ class TaskList:
 
     async def save_new_task(self, channels_list: List[str], reward: int):
         """Сохраняем новую задачу в основной список и в базу"""
-        new_task = TaskModel(channels_list, reward)
+        task_id = int(time.time())
+        new_task = TaskModel(channels_list, reward, task_id)
         self.content_list.append(new_task)
         await bot_base.add_new_task(new_task.task_id, '$'.join(channels_list), reward)
 
@@ -129,7 +130,7 @@ class TaskList:
                 channels_list=task[1].split('$'),
                 reward=task[2],
                 task_id=task[0],
-                who_complete={i for i in task[3].split('$')})
+                who_complete={i for i in task[3].split('$')} if task[3] else set())
             self.content_list.append(db_task)
 
 

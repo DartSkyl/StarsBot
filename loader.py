@@ -11,7 +11,7 @@ bot_base = BotBase()
 
 
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(
-    parse_mode='HTML',
+    parse_mode='MarkdownV2',
     link_preview_is_disabled=True))
 
 dp = Dispatcher(bot=bot, storage=MemoryStorage())

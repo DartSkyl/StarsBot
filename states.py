@@ -19,3 +19,10 @@ class AdminStates(StatesGroup):
     task_edit_menu = State()
     edit_channels_menu = State()
     edit_reward_menu = State()
+
+    # Настройка сообщений
+    msg_set_menu = State()
+    first_contact = State()
+    main_menu_message = State()
+    user_task_menu = State()
+    welcome_message = State()

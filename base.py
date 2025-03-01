@@ -15,7 +15,8 @@ class BotBase:
                            'user_id INTEGER PRIMARY KEY,'
                            'stars INT DEFAULT 100,'  # Всегда делить на 100
                            'referer INTEGER DEFAULT 0,'  # Будем записывать каждому того, кто его привел
-                           'referral_count INTEGER DEFAULT 0);')
+                           'referral_count INTEGER DEFAULT 0,'
+                           'captcha VARCHAR(155) DEFAULT "False");')
 
             # Таблица с заданиями
             cursor.execute('CREATE TABLE IF NOT EXISTS tasks_list ('
@@ -23,6 +24,12 @@ class BotBase:
                            'channels_list TEXT,'
                            'reward INT,  '  # Всегда делить на 100
                            'who_complete TEXT'
+                           ');')
+
+            # Таблица с настройками
+            cursor.execute('CREATE TABLE IF NOT EXISTS settings ('
+                           'set_name VARCHAR(155) PRIMARY KEY, '
+                           'set_content TEXT'
                            ');')
 
             connection.commit()
@@ -60,6 +67,15 @@ class BotBase:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE all_users "
                            f"SET stars = stars + {stars} "
+                           f"WHERE user_id = {user_id};")
+            connection.commit()
+
+    @staticmethod
+    async def captcha_execute(user_id):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE all_users "
+                           f"SET captcha = 'True' "
                            f"WHERE user_id = {user_id};")
             connection.commit()
 
@@ -116,3 +132,32 @@ class BotBase:
                            f"SET reward =  '{reward}' "
                            f"WHERE task_id = {task_id};")
             connection.commit()
+
+    # ====================
+    # Задания
+    # ====================
+
+    @staticmethod
+    async def settings_add(set_name, set_content):
+        """Вставляем новую задачу"""
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f'INSERT INTO settings (set_name, set_content) '
+                           f'VALUES ("{set_name}", "{set_content}");')
+            connection.commit()
+
+    @staticmethod
+    async def settings_change(set_name, set_content):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE settings "
+                           f"SET set_content =  '{set_content}' "
+                           f"WHERE set_name = {set_name};")
+            connection.commit()
+
+    @staticmethod
+    async def settings_get(set_name):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            task_list = cursor.execute(f'SELECT * FROM settings WHERE set_name = "{set_name}";').fetchall()
+            return task_list[0]
