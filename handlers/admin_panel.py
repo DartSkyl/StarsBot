@@ -286,12 +286,13 @@ async def edit_mode_for_message(callback: CallbackQuery, state: FSMContext):
     """Открываем само сообщение и кнопки дальнейших действий"""
     await callback.message.delete()
     msg_path = f'{callback.data.replace("msg_", "")}'
-
-    msg_text = (await bot_base.settings_get(msg_path))[1]
-    msg_text = await forming_str_from_txt_file(msg_text, kwargs=msg_dict[msg_path][1])
-
-    await callback.message.answer(msg_text, reply_markup=msg_setting_edit_func)
     await state.set_data({'msg': msg_path})
+    try:
+        msg_text = (await bot_base.settings_get(msg_path))[1]
+        msg_text = await forming_str_from_txt_file(msg_text, kwargs=msg_dict[msg_path][1])
+        await callback.message.answer(msg_text, reply_markup=msg_setting_edit_func)
+    except IndexError:
+        await start_add_new_text(callback, state)
 
 
 @admin_router.callback_query(F.data == 'setting_text')
