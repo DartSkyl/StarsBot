@@ -24,9 +24,9 @@ async def task_keys(task_id):
 
 msg_settings_menu_main = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Сообщение с капчей', callback_data='msg_first_contact')],
+    [InlineKeyboardButton(text='Сообщение после капчи', callback_data='msg_welcome_message')],
     [InlineKeyboardButton(text='Сообщение со ссылкой и статистикой', callback_data='msg_main_menu_message')],
     [InlineKeyboardButton(text='Сообщение с "Заданием"', callback_data='msg_user_task_menu')],
-    [InlineKeyboardButton(text='Сообщение после капчи', callback_data='msg_welcome_message')],
 ])
 
 msg_setting_edit_func = InlineKeyboardMarkup(inline_keyboard=[

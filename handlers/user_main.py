@@ -1,6 +1,5 @@
 import random
 import os
-import asyncio
 from sqlite3 import IntegrityError
 
 from aiogram.types import Message, CallbackQuery
@@ -20,7 +19,7 @@ from config import MAIN_CHANNEL, BOT_USERNAME
 
 async def get_random_fruit_emoji():
     emojis = ["🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍓", "🍈",
-              "🍒", "🍑", "🥝", "🍍", "🥭", "🍎", "🍊", "🍓", "🍇"]
+              "🍒", "🍑", "🥝", "🍍", "🥭", "🍎", "🍊", "🍇"]
     random.shuffle(emojis)
     random_string = ''
     for i in emojis:

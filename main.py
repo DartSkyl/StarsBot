@@ -1,6 +1,8 @@
 import asyncio
 import datetime
 
+from aiogram.types import BotCommand
+
 import handlers  # noqa
 from loader import dp, bot, base_load
 from utils.admin_router import admin_router
@@ -15,6 +17,9 @@ async def start_up():
 
     await base_load()
     await task_manager.load_task_list_from_db()
+    await bot.set_my_commands([
+        BotCommand(command='start', description='Главное меню и рестарт')
+    ])
 
     with open('bot.log', 'a') as log_file:
         log_file.write(f'\n========== New bot session {datetime.datetime.now()} ==========\n\n')
