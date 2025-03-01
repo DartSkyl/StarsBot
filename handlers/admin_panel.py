@@ -19,7 +19,7 @@ from loader import bot, bot_base
 @admin_router.message(F.text == 'Назад')
 @admin_router.message(Command('admin'))
 async def start_func(msg: Message, state: FSMContext):
-    msg_text = 'Шалом, православные 😀'
+    msg_text = 'Админ-панель:'
     await msg.answer(msg_text, reply_markup=main_menu_admin)
     await state.clear()
 
