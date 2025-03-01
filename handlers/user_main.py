@@ -122,7 +122,7 @@ async def start_func(msg: Message, state: FSMContext):
             stars_count=str(user_stat[0]).replace('.', '\.'),
             ref_count=user_stat[1]
             )
-
+        print(msg_text)
         await msg.answer(msg_text, reply_markup=main_menu_user)
         await state.clear()
     else:
