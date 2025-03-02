@@ -206,9 +206,6 @@ async def open_user_task_menu(msg: Message, state: FSMContext):
                 task_str = (f'Каналы для подписки:\n\n{task_channels_str}\n\n'
                             f'Вознаграждение: {int(task.reward) / 100}\n\n')
                 task_str = await escape_special_chars(task_str)
-
-                # with open(os.path.join('messages', 'user_task_menu.txt'), encoding='utf-8') as file:
-                #     msg_text = file.read()
                 msg_text = (await bot_base.settings_get('user_task_menu'))[1]
                 msg_text = await forming_str_from_txt_file(msg_text, task_str=task_str)
                 await msg.answer(msg_text, reply_markup=await user_task_menu(task.task_id))
@@ -248,8 +245,14 @@ async def check_user_task_complete(callback: CallbackQuery, state: FSMContext):
             for ch in check_execute[1]:
                 if ch in origin_msg_text:
                     origin_msg_text = origin_msg_text.replace(('\n' + ch), '')
+            new_msg_text = ''
+            for s in origin_msg_text.splitlines():
+                if s.startswith('https://t.me/') or s.startswith('Вознаграждение'):
+                    new_msg_text += s.replace('.', '\.').replace('_', '\_') + '\n'
+                else:
+                    new_msg_text += s + '\n'
             try:
-                await callback.message.edit_text(origin_msg_text, reply_markup=await user_task_menu(task_id))
+                await callback.message.edit_text(new_msg_text, reply_markup=await user_task_menu(task_id))
             except TelegramBadRequest:
                 pass
 
