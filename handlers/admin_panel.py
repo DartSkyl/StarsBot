@@ -232,6 +232,27 @@ async def catch_new_reward(msg: Message, state: FSMContext):
 
 
 # ====================
+# Просмотр статистики
+# ====================
+
+async def date_string_to_epoch(date_string):
+    dt = datetime.strptime(date_string, '%Y-%m-%d')
+    epoch_seconds = int(dt.timestamp())
+    return epoch_seconds
+
+
+@admin_router.message(F.text == 'Пользователи и статистика')
+async def get_statistic(msg: Message):
+    """Выдаем статистику"""
+    date_str = str(datetime.now()).split(' ')[0]
+
+    user_count = len(await bot_base.get_all_user())
+    msg_text = (f'Текущая статистика:\n'
+                f'Всего пользователей: {user_count}')
+    await msg.answer(msg_text)
+
+
+# ====================
 # Просмотр заявок на вывод звезд
 # ====================
 

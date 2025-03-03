@@ -2,6 +2,12 @@ import sqlite3
 import datetime
 
 
+async def date_string_to_epoch(date_string):
+    dt = datetime.datetime.strptime(date_string, '%Y-%m-%d')
+    epoch_seconds = int(dt.timestamp())
+    return epoch_seconds
+
+
 class BotBase:
     """Класс для реализации базы данных и методов для взаимодействия с ней"""
 
@@ -44,6 +50,13 @@ class BotBase:
                            'requirement_stars INTEGER'
                            ');')
 
+            # Таблица со статистикой
+            cursor.execute('CREATE TABLE IF NOT EXISTS statistic ('
+                           'date_int INTEGER PRIMARY KEY,'
+                           'task_count INTEGER DEFAULT 0, '
+                           'stars_count INTEGER DEFAULT 0'
+                           ');')
+
             connection.commit()
 
     # ====================
@@ -78,6 +91,13 @@ class BotBase:
             cursor = connection.cursor()
             user_info = cursor.execute(f'SELECT * FROM all_users WHERE user_id = {user_id};').fetchall()
             return user_info
+
+    @staticmethod
+    async def get_all_user():
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            all_users = cursor.execute(f'SELECT * FROM all_users;').fetchall()
+            return all_users
 
     @staticmethod
     async def star_rating(user_id, stars):
@@ -245,3 +265,38 @@ class BotBase:
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
             cursor.execute(f"DELETE FROM stars_withdrawal WHERE username = '{username}';")
+
+    # ====================
+    # Статистика
+    # ====================
+
+    @staticmethod
+    async def get_statistic():
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            stat = cursor.execute(f'SELECT * FROM statistic;').fetchall()
+            return stat
+
+    @staticmethod
+    async def stars_count(stars):
+        with sqlite3.connect('stars_base.db') as connection:
+            today = str(datetime.datetime.now()).split(' ')[0]
+            date_int = await date_string_to_epoch(today)
+            cursor = connection.cursor()
+            cursor.execute(f'INSERT INTO statistic (date_int, stars_count) '
+                           f'VALUES ({date_int} ,{stars})'
+                           f'ON CONFLICT (date_int)'
+                           f'DO UPDATE SET stars_count = stars_count + {stars};')
+            connection.commit()
+
+    @staticmethod
+    async def task_count():
+        with sqlite3.connect('stars_base.db') as connection:
+            today = str(datetime.datetime.now()).split(' ')[0]
+            date_int = await date_string_to_epoch(today)
+            cursor = connection.cursor()
+            cursor.execute(f'INSERT INTO statistic (date_int, task_count) '
+                           f'VALUES ({date_int} , 1)'
+                           f'ON CONFLICT (date_int)'
+                           f'DO UPDATE SET task_count = task_count + 1;')
+            connection.commit()

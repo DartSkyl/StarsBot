@@ -95,6 +95,7 @@ async def start_func(msg: Message, state: FSMContext):
             await bot_base.add_new_user(msg.from_user.id, referer_id)
             if referer_id != 0 and not is_pay:
                 await bot_base.star_rating(referer_id, 25)
+                await bot_base.stars_count(25)
         except IntegrityError:
             pass
 
@@ -106,6 +107,7 @@ async def start_func(msg: Message, state: FSMContext):
             await bot_base.add_new_user(msg.from_user.id, referer_id)
             if referer_id != 0:
                 await bot_base.star_rating(referer_id, 25)
+                await bot_base.stars_count(25)
                 await state.set_data({'is_pay': True, 'referer_id': referer_id})
         except IntegrityError:
             pass
@@ -149,6 +151,7 @@ async def catch_correct_answer(callback: CallbackQuery, state: FSMContext):
     referer_id = (await state.get_data())['referer_id']  # Кому за прохождение капчи?
     if referer_id != 0:
         await bot_base.star_rating(referer_id, 75)
+        await bot_base.stars_count(75)
 
     await bot_base.captcha_execute(callback.from_user.id)
     msg_text = (await bot_base.settings_get('welcome_message'))[1]
@@ -172,13 +175,16 @@ async def get_profit_to_executor(user_id, task_id):
 
     # Сначала начисляем исполнителю
     await bot_base.star_rating(user_id, task.reward)
+    await bot_base.stars_count(task.reward)
     await bot_base.set_last_task(user_id)
     # Помечаем задание
     await task.new_complete(str(user_id))
+    await bot_base.task_count()
 
     # Если есть реферер, то чмокнем и его
     if referer_id != 0:
         await bot_base.star_rating(referer_id, (task.reward / 100 * ref_percent))
+        await bot_base.stars_count(task.reward / 100 * ref_percent)
 
 
 async def escape_special_chars(text):
@@ -320,6 +326,7 @@ async def daily_bonus(msg: Message):
             bonus = 1
 
         await bot_base.star_rating(user_info[0], bonus)
+        await bot_base.stars_count(bonus)
         await bot_base.set_last_bonus(user_info[0])
         await bot_base.set_bonus(user_info[0], bonus + 1)
         msg_text = f'Порядковый номер сегодняшнего бонуса: {bonus}\n'
