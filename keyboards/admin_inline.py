@@ -27,12 +27,19 @@ msg_settings_menu_main = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Сообщение после капчи', callback_data='msg_welcome_message')],
     [InlineKeyboardButton(text='Сообщение со ссылкой и статистикой', callback_data='msg_main_menu_message')],
     [InlineKeyboardButton(text='Сообщение с "Заданием"', callback_data='msg_user_task_menu')],
+    [InlineKeyboardButton(text='Сообщение с выводом звезд', callback_data='msg_stars_withdrawal')],
 ])
 
 msg_setting_edit_func = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Изменить текст', callback_data='setting_text')],
-    [InlineKeyboardButton(text='Назад', callback_data='back')],
-    # [InlineKeyboardButton(text='Сообщение с "Заданием"', callback_data='msg_user_task_menu')],
-    # [InlineKeyboardButton(text='Сообщение после капчи', callback_data='msg_welcome_message')],
+    [InlineKeyboardButton(text='Назад', callback_data='back')]
 ])
+
+
+async def request_confirm(username, stars):
+    request_key = InlineKeyboardBuilder()
+    request_key.button(text='Подтвердить вывод звезд', callback_data=f'c-{username}-{stars}')
+    return request_key.as_markup()
+
+
 

@@ -22,7 +22,9 @@ class AdminStates(StatesGroup):
 
     # Настройка сообщений
     msg_set_menu = State()
+
     first_contact = State()
     main_menu_message = State()
     user_task_menu = State()
     welcome_message = State()
+    stars_withdrawal = State()

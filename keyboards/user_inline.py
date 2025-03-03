@@ -20,3 +20,16 @@ async def user_task_menu(task_id):
     task_menu.button(text='Пропустить задание', callback_data=f'skip')
     task_menu.adjust(1)
     return task_menu.as_markup()
+
+
+async def stars_menu():
+    stars_keys = InlineKeyboardBuilder()
+    stars_keys.button(text='15', callback_data='stars_15')
+    stars_keys.button(text='25', callback_data='stars_25')
+    stars_keys.button(text='50', callback_data='stars_50')
+    stars_keys.button(text='100', callback_data='stars_100')
+    stars_keys.button(text='150', callback_data='stars_150')
+    stars_keys.button(text='250', callback_data='stars_250')
+    stars_keys.button(text='500', callback_data='stars_500')
+    stars_keys.adjust(2)
+    return stars_keys.as_markup()

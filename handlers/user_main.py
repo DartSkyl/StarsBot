@@ -11,7 +11,7 @@ from aiogram.exceptions import TelegramBadRequest
 
 from utils.user_router import users_router
 from utils.task_manager import task_manager
-from keyboards import random_keyboards, main_menu_user, user_task_menu
+from keyboards import random_keyboards, main_menu_user, user_task_menu, stars_menu
 from states import UserStates
 from loader import bot_base, bot
 from config import MAIN_CHANNEL, BOT_USERNAME
@@ -289,3 +289,41 @@ async def skip_task(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer('Других заданий пока нет')
     except StopAsyncIteration:
         await callback.message.answer('Других заданий пока нет')
+
+
+# ====================
+# Вывод звезд
+# ====================
+
+
+@users_router.message(F.text == '🎁 Вывести звезды')
+async def get_stars_menu(msg: Message):
+    """Открываем меню вывода звезд"""
+    user_stars = (await bot_base.get_user(user_id=msg.from_user.id))[0][1]
+    msg_text = (await bot_base.settings_get('stars_withdrawal'))[1]
+    msg_text = await forming_str_from_txt_file(msg_text,
+                                               stars_count=str(int(user_stars) / 100).replace('.', '\.'))
+    await msg.answer(msg_text, reply_markup=await stars_menu())
+    try:
+        user_request = await bot_base.get_user_request(msg.from_user.username)
+        await msg.answer(f'Текущая заявка на вывод *{int(user_request[2] / 100)}* ⭐️')
+    except IndexError:
+        pass
+
+
+@users_router.callback_query(F.data.startswith('stars_'))
+async def forming_request_for_withdrawal_stars(callback: CallbackQuery):
+    """Проверяем, хватает ли заработанных звезд и формируем запрос на вывод"""
+    await callback.answer()
+    requirement_stars = int(callback.data.replace('stars_', '')) * 100  # 1 звезда = 100
+    user_stars = (await bot_base.get_user(user_id=callback.from_user.id))[0][1]
+    if user_stars >= requirement_stars:
+        if callback.from_user.username:
+            await bot_base.new_request_for_withdrawal_of_stars(callback.from_user.id, callback.from_user.username, requirement_stars)
+            await callback.message.answer('Заявка на вывод звезд сформирована\!')
+        else:
+            await callback.message.answer('Перед выводом необходимо установить "Имя пользователя"\n'
+                                          'Для этого зайдите в "Настройки", а затем в меню "Мой аккаунт"')
+    else:
+        await callback.message.answer('У вас недостаточно звезд\!')
+

@@ -11,9 +11,10 @@ from utils.task_manager import task_manager
 from keyboards import (main_menu_admin, edit_new_task,
                        task_menu, task_keys,
                        edit_task, msg_settings_menu_main,
-                       msg_setting_edit_func)
+                       msg_setting_edit_func, request_confirm)
 from states import AdminStates
 from loader import bot, bot_base
+from config import MAIN_CHANNEL
 
 
 @admin_router.message(F.text == 'Назад')
@@ -231,6 +232,37 @@ async def catch_new_reward(msg: Message, state: FSMContext):
 
 
 # ====================
+# Просмотр заявок на вывод звезд
+# ====================
+
+@admin_router.message(F.text == 'Заявки на вывод звезд')
+async def get_requests_list(msg: Message):
+    """Выдаем список заявок на вывод"""
+    all_requests = await bot_base.get_all_requests()
+    if len(all_requests) > 0:
+        for req in all_requests:
+            await msg.answer(f'Заявка на вывод\nПользователь: @{req[1]}\n'
+                             f'Запрашиваемые ⭐️: <b>{int(req[2] / 100)}</b>',
+                             reply_markup=await request_confirm(req[1], req[2]),
+                             parse_mode='HTML')
+    else:
+        await msg.answer('Заявок нет')
+
+
+@admin_router.callback_query(F.data.startswith('c-'))
+async def confirm_user_request(callback: CallbackQuery):
+    """Ловим подтверждение выплаты"""
+    req_info = callback.data.split('-')
+    user_id = (await bot_base.get_user_request(req_info[1]))[0]
+    await bot_base.remove_request(req_info[1])
+    await bot_base.star_write_off(user_id, req_info[2])
+    await callback.message.edit_text(f'Заявка на вывод\nПользователь: @{req_info[1]}\n'
+                                     f'Запрашиваемые ⭐️: <b>{int(int(req_info[2]) / 100)}</b>\n\n'
+                                     f'<b>Заявка подтверждена!</b>', parse_mode='HTML')
+    await bot.send_message(chat_id=user_id, text='Ваша заявка на вывод ⭐️ подтверждена\!')
+
+
+# ====================
 # Настройка сообщений
 # ====================
 
@@ -266,6 +298,11 @@ msg_dict = {
     'welcome_message': (
         AdminStates.welcome_message,
         {'': ''}
+    ),
+
+    'stars_withdrawal': (
+        AdminStates.stars_withdrawal,
+        {'stars_count': 123}
     )
 }
 
@@ -307,6 +344,7 @@ async def start_add_new_text(callback: CallbackQuery, state: FSMContext):
 @admin_router.message(AdminStates.user_task_menu)
 @admin_router.message(AdminStates.welcome_message)
 @admin_router.message(AdminStates.first_contact)
+@admin_router.message(AdminStates.stars_withdrawal)
 async def set_first_contact(msg: Message, state: FSMContext):
     """Устанавливаем новый текст для сообщений"""
     msg_path = (await state.get_data())['msg']

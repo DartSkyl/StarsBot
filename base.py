@@ -32,6 +32,13 @@ class BotBase:
                            'set_content TEXT'
                            ');')
 
+            # Таблица с заявками на вывод звезд
+            cursor.execute('CREATE TABLE IF NOT EXISTS stars_withdrawal ('
+                           'user_id INTEGER,'
+                           'username VARCHAR(155) PRIMARY KEY, '
+                           'requirement_stars INTEGER'
+                           ');')
+
             connection.commit()
 
     # ====================
@@ -67,6 +74,15 @@ class BotBase:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE all_users "
                            f"SET stars = stars + {stars} "
+                           f"WHERE user_id = {user_id};")
+            connection.commit()
+
+    @staticmethod
+    async def star_write_off(user_id, stars):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE all_users "
+                           f"SET stars = stars - {stars} "
                            f"WHERE user_id = {user_id};")
             connection.commit()
 
@@ -134,7 +150,7 @@ class BotBase:
             connection.commit()
 
     # ====================
-    # Задания
+    # Сообщения
     # ====================
 
     @staticmethod
@@ -143,16 +159,9 @@ class BotBase:
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
             cursor.execute(f'INSERT INTO settings (set_name, set_content) '
-                           f'VALUES ("{set_name}", "{set_content}");')
-            connection.commit()
-
-    @staticmethod
-    async def settings_change(set_name, set_content):
-        with sqlite3.connect('stars_base.db') as connection:
-            cursor = connection.cursor()
-            cursor.execute(f"UPDATE settings "
-                           f"SET set_content =  '{set_content}' "
-                           f"WHERE set_name = {set_name};")
+                           f'VALUES ("{set_name}", "{set_content}")'
+                           f'ON CONFLICT (set_name)'
+                           f'DO UPDATE SET set_content = "{set_content}";')
             connection.commit()
 
     @staticmethod
@@ -161,3 +170,38 @@ class BotBase:
             cursor = connection.cursor()
             task_list = cursor.execute(f'SELECT * FROM settings WHERE set_name = "{set_name}";').fetchall()
             return task_list[0]
+
+    # ====================
+    # Сообщения
+    # ====================
+
+    @staticmethod
+    async def new_request_for_withdrawal_of_stars(user_id, username, requirement_stars):
+        """Вставляем новую задачу"""
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f'INSERT INTO stars_withdrawal (user_id, username, requirement_stars) '
+                           f'VALUES ({user_id} ,"{username}", {requirement_stars})'
+                           f'ON CONFLICT (username)'
+                           f'DO UPDATE SET requirement_stars = {requirement_stars};')
+            connection.commit()
+
+    @staticmethod
+    async def get_all_requests():
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            requests_list = cursor.execute(f'SELECT * FROM stars_withdrawal;').fetchall()
+            return requests_list
+
+    @staticmethod
+    async def get_user_request(username):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            requests_list = cursor.execute(f'SELECT * FROM stars_withdrawal WHERE username = "{username}";').fetchall()
+            return requests_list[0]
+
+    @staticmethod
+    async def remove_request(username):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"DELETE FROM stars_withdrawal WHERE username = '{username}';")
