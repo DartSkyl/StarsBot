@@ -4,5 +4,5 @@ from aiogram.utils.keyboard import ReplyKeyboardMarkup
 
 main_menu_user = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='⭐️ Заработать звезды')], [KeyboardButton(text='🎁 Вывести звезды')],
-    [KeyboardButton(text='🎯 Задания'),  KeyboardButton(text='💎 Бонус')]
+    [KeyboardButton(text='🎯 Задания'),  KeyboardButton(text='💎 Ежедневный бонус')]
         ], resize_keyboard=True)

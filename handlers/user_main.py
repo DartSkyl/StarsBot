@@ -1,5 +1,6 @@
 import random
 import os
+import datetime
 from sqlite3 import IntegrityError
 
 from aiogram.types import Message, CallbackQuery
@@ -171,6 +172,7 @@ async def get_profit_to_executor(user_id, task_id):
 
     # Сначала начисляем исполнителю
     await bot_base.star_rating(user_id, task.reward)
+    await bot_base.set_last_task(user_id)
     # Помечаем задание
     await task.new_complete(str(user_id))
 
@@ -289,6 +291,53 @@ async def skip_task(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer('Других заданий пока нет')
     except StopAsyncIteration:
         await callback.message.answer('Других заданий пока нет')
+
+
+# ====================
+# Ежедневный бонус
+# ====================
+
+async def get_yesterday_date():
+    today = datetime.datetime.now()
+    yesterday = today - datetime.timedelta(days=1)
+    formatted_date = yesterday.strftime('%Y-%m-%d')
+    return formatted_date
+
+
+@users_router.message(F.text == '💎 Ежедневный бонус')
+async def daily_bonus(msg: Message):
+    """Активируем ежедневный бонус"""
+    user_info = (await bot_base.get_user(msg.from_user.id))[0]
+    today = str(datetime.datetime.now()).split(' ')[0]
+    yesterday = await get_yesterday_date()
+
+    # Условия активации бонуса - пройти задание и новый реферал. Все это должно быть исполнено в день бонуса
+    if user_info[5] == today and user_info[6] == today and user_info[7] != today:
+
+        if yesterday == user_info[7]:  # Проверяем последовательность бонусов
+            bonus = user_info[8]
+        else:
+            bonus = 1
+
+        await bot_base.star_rating(user_info[0], bonus)
+        await bot_base.set_last_bonus(user_info[0])
+        await bot_base.set_bonus(user_info[0], bonus + 1)
+        msg_text = f'Порядковый номер сегодняшнего бонуса: {bonus}\n'
+
+    elif user_info[5] != today and user_info[6] != today:
+        msg_text = ('Для активации ежедневного бонуса нужно выполнить хоть одно задание '
+                    'и пригласить хоть одного реферала')
+
+    elif user_info[5] != today:
+        msg_text = 'Нужно выполнить сегодня хоть одно задание'
+
+    elif user_info[6] != today:
+        msg_text = 'Нужно пригласить хотя бы одного реферала сегодня'
+
+    else:
+        msg_text = 'Сегодняшний бонус получен'
+
+    await msg.answer(msg_text)
 
 
 # ====================

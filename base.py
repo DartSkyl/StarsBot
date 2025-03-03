@@ -1,4 +1,5 @@
 import sqlite3
+import datetime
 
 
 class BotBase:
@@ -16,7 +17,11 @@ class BotBase:
                            'stars INT DEFAULT 100,'  # Всегда делить на 100
                            'referer INTEGER DEFAULT 0,'  # Будем записывать каждому того, кто его привел
                            'referral_count INTEGER DEFAULT 0,'
-                           'captcha VARCHAR(155) DEFAULT "False");')
+                           'captcha VARCHAR(155) DEFAULT "False",'
+                           'last_task VARCHAR(155) DEFAULT "empty",'  # Когда последний раз выполнял задание
+                           'last_ref VARCHAR(155) DEFAULT "empty",'  # Когда привел последнего реферала
+                           'last_bonus VARCHAR(155) DEFAULT "empty",'  # Когда активировал бонус
+                           'bonus INTEGER DEFAULT 1);')  # Кол-во бонусов подряд, "n"
 
             # Таблица с заданиями
             cursor.execute('CREATE TABLE IF NOT EXISTS tasks_list ('
@@ -59,6 +64,12 @@ class BotBase:
                            f"SET referral_count = referral_count + 1 "
                            f"WHERE user_id = {referer_id};")
 
+            # И обновим last_ref реферера
+            last_ref = str(datetime.datetime.now()).split(' ')[0]
+            cursor.execute(f"UPDATE all_users "
+                           f"SET last_ref = '{last_ref}' "
+                           f"WHERE user_id = {referer_id};")
+
             connection.commit()
 
     @staticmethod
@@ -92,6 +103,35 @@ class BotBase:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE all_users "
                            f"SET captcha = 'True' "
+                           f"WHERE user_id = {user_id};")
+            connection.commit()
+
+    @staticmethod
+    async def set_last_task(user_id):
+        with sqlite3.connect('stars_base.db') as connection:
+            last_task = str(datetime.datetime.now()).split(' ')[0]
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE all_users "
+                           f"SET last_task = '{last_task}' "
+                           f"WHERE user_id = {user_id};")
+            connection.commit()
+
+    @staticmethod
+    async def set_last_bonus(user_id):
+        with sqlite3.connect('stars_base.db') as connection:
+            last_bonus = str(datetime.datetime.now()).split(' ')[0]
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE all_users "
+                           f"SET last_bonus = '{last_bonus}' "
+                           f"WHERE user_id = {user_id};")
+            connection.commit()
+
+    @staticmethod
+    async def set_bonus(user_id, bonus):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE all_users "
+                           f"SET bonus = {bonus} "
                            f"WHERE user_id = {user_id};")
             connection.commit()
 
