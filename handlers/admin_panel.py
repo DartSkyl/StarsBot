@@ -398,6 +398,7 @@ async def edit_mode_for_message(callback: CallbackQuery, state: FSMContext):
     try:
         msg_text = (await bot_base.settings_get(msg_path))[1]
         msg_text = await forming_str_from_txt_file(msg_text, kwargs=msg_dict[msg_path][1])
+        print(msg_text)
         await callback.message.answer(msg_text, reply_markup=msg_setting_edit_func)
     except IndexError:
         await start_add_new_text(callback, state)
