@@ -9,13 +9,14 @@ from loader import bot_base, bot
 
 class TaskModel:
     """Класс для реализации контейнера для "Заданий" """
-    def __init__(self, channels_list: List[str], reward: int, task_id: int, who_complete=None):
+    def __init__(self, channels_list: List[str], reward: int, task_id: int, complete_count: int, who_complete=None):
         self.task_id: int = task_id  # Каждый ID это секунды создания
         # Список для каналов на которые нужно подписаться для выполнения задания
         self.channels_list: List[str] = channels_list
-        self.reward = reward  # Вознаграждение
+        self.reward: int = reward  # Вознаграждение
+        self.complete_count: int = complete_count
         # Множество с теми, кто выполнил задание
-        self.who_complete = who_complete if who_complete and '' not in who_complete else set()
+        self.who_complete: set = who_complete if who_complete and '' not in who_complete else set()
 
     def __str__(self):
         chl_lst_str = '\n'.join(self.channels_list)
@@ -39,7 +40,10 @@ class TaskModel:
         """Проверяем, выполнял ли пользователь задачу"""
         return True if str(user_id) in self.who_complete else False
 
-    async def edit_task(self, new_channels: List[str] = None, reward: int = None):
+    async def check_complete_count(self):
+        return len(self.who_complete) >= self.complete_count
+
+    async def edit_task(self, new_channels: List[str] = None, reward: int = None, complete_count: int = None):
         """Изменяем задание"""
         if new_channels:
             self.channels_list = new_channels
@@ -47,6 +51,9 @@ class TaskModel:
         elif reward:
             self.reward = reward
             await bot_base.edit_task_reward(task_id=self.task_id, reward=reward)
+        elif complete_count:
+            self.complete_count = complete_count
+            await bot_base.edit_task_complete_count(task_id=self.task_id, complete_count=complete_count)
 
 
 class TaskList:
@@ -95,14 +102,14 @@ class TaskList:
 
                 return channels_count, execute_channels_count
 
-    async def save_new_task(self, channels_list: List[str], reward: int):
+    async def save_new_task(self, channels_list: List[str], reward: int, complete_count: int):
         """Сохраняем новую задачу в основной список и в базу"""
         task_id = int(time.time())
-        new_task = TaskModel(channels_list, reward, task_id)
+        new_task = TaskModel(channels_list, reward, task_id, complete_count)
         self.content_list.append(new_task)
-        await bot_base.add_new_task(new_task.task_id, '$'.join(channels_list), reward)
+        await bot_base.add_new_task(new_task.task_id, '$'.join(channels_list), reward, complete_count)
 
-    async def edit_task(self, task_id, new_channels=None, new_reward=None):
+    async def edit_task(self, task_id, new_channels=None, new_reward=None, complete_count=None):
         """Изменяем конкретное задание"""
         for task in self.content_list:
             if task_id == task.task_id:
@@ -110,6 +117,8 @@ class TaskList:
                     await task.edit_task(new_channels=new_channels)
                 elif new_reward:
                     await task.edit_task(reward=new_reward)
+                elif complete_count:
+                    await task.edit_task(complete_count=complete_count)
                 return task
 
     async def remove_task(self, task_id):
@@ -130,7 +139,8 @@ class TaskList:
                 channels_list=task[1].split('$'),
                 reward=task[2],
                 task_id=task[0],
-                who_complete={i for i in task[3].split('$')} if task[3] else set())
+                who_complete={i for i in task[3].split('$')} if task[3] else set(),
+                complete_count=task[4])
             self.content_list.append(db_task)
 
 

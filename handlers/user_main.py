@@ -205,7 +205,7 @@ async def open_user_task_menu(msg: Message, state: FSMContext):
 
         task_generator = task_manager.task_generator()
         async for task in task_generator:
-            if not await task.check_execute(msg.from_user.id):
+            if not await task.check_execute(msg.from_user.id) and not await task.check_complete_count():
                 await state.set_data({'task_id': task.task_id, 'task_generator': task_generator})
 
                 await state.set_state(UserStates.executor)
@@ -273,7 +273,7 @@ async def skip_task(callback: CallbackQuery, state: FSMContext):
         task_generator = (await state.get_data())['task_generator']
 
         async for task in task_generator:
-            if not await task.check_execute(callback.from_user.id):
+            if not await task.check_execute(callback.from_user.id) and not await task.check_complete_count():
                 await state.update_data({'task_id': task.task_id, 'task_generator': task_generator})
 
                 task_channels_str = '\n'.join(task.channels_list)

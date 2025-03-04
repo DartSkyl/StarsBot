@@ -4,12 +4,14 @@ from aiogram.utils.keyboard import InlineKeyboardButton, InlineKeyboardMarkup, I
 edit_new_task = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Изменить список каналов', callback_data='edit_channels')],
     [InlineKeyboardButton(text='Изменить вознаграждение', callback_data='edit_reward')],
+    [InlineKeyboardButton(text='Изменить кол-во исполнений', callback_data='edit_complete')],
     [InlineKeyboardButton(text='✅ Все верно', callback_data='add_new_task')]
 ])
 
 edit_task = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Изменить список каналов', callback_data='edit_channels')],
-    [InlineKeyboardButton(text='Изменить вознаграждение', callback_data='edit_reward')]
+    [InlineKeyboardButton(text='Изменить вознаграждение', callback_data='edit_reward')],
+    [InlineKeyboardButton(text='Изменить кол-во исполнений', callback_data='edit_complete')],
 ])
 
 
@@ -40,6 +42,3 @@ async def request_confirm(username, stars):
     request_key = InlineKeyboardBuilder()
     request_key.button(text='Подтвердить вывод звезд', callback_data=f'c-{username}-{stars}')
     return request_key.as_markup()
-
-
-

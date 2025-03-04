@@ -34,7 +34,8 @@ class BotBase:
                            'task_id INTEGER PRIMARY KEY, '
                            'channels_list TEXT,'
                            'reward INT,  '  # Всегда делить на 100
-                           'who_complete TEXT'
+                           'who_complete TEXT,'
+                           'complete_count INTEGER'
                            ');')
 
             # Таблица с настройками
@@ -160,12 +161,12 @@ class BotBase:
     # ====================
 
     @staticmethod
-    async def add_new_task(task_id, channels_list, reward):
+    async def add_new_task(task_id, channels_list, reward, complete_count):
         """Вставляем новую задачу"""
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
-            cursor.execute(f'INSERT INTO tasks_list (task_id, channels_list, reward) '
-                           f'VALUES ({task_id}, "{channels_list}", {reward})')
+            cursor.execute(f'INSERT INTO tasks_list (task_id, channels_list, reward, complete_count) '
+                           f'VALUES ({task_id}, "{channels_list}", {reward}, {complete_count})')
             connection.commit()
 
     @staticmethod
@@ -206,6 +207,15 @@ class BotBase:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE tasks_list "
                            f"SET reward =  '{reward}' "
+                           f"WHERE task_id = {task_id};")
+            connection.commit()
+
+    @staticmethod
+    async def edit_task_complete_count(task_id, complete_count):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE tasks_list "
+                           f"SET complete_count =  {complete_count} "
                            f"WHERE task_id = {task_id};")
             connection.commit()
 
@@ -271,11 +281,11 @@ class BotBase:
     # ====================
 
     @staticmethod
-    async def get_statistic():
+    async def get_statistic(today_int):
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
-            stat = cursor.execute(f'SELECT * FROM statistic;').fetchall()
-            return stat
+            stat = cursor.execute(f'SELECT * FROM statistic WHERE date_int = {today_int};').fetchall()
+            return stat[0]
 
     @staticmethod
     async def stars_count(stars):
