@@ -5,6 +5,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram import F
 from aiogram.fsm.context import FSMContext
+from aiogram.exceptions import TelegramBadRequest
 
 from utils.admin_router import admin_router
 from utils.task_manager import task_manager
@@ -402,6 +403,9 @@ async def edit_mode_for_message(callback: CallbackQuery, state: FSMContext):
 
         await callback.message.answer(msg_text, reply_markup=msg_setting_edit_func)
     except IndexError:
+        await start_add_new_text(callback, state)
+    except TelegramBadRequest:
+        await callback.message.answer('При составлении текста была допущена ошибка!')
         await start_add_new_text(callback, state)
 
 
