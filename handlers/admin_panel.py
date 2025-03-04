@@ -405,7 +405,7 @@ async def edit_mode_for_message(callback: CallbackQuery, state: FSMContext):
     except IndexError:
         await start_add_new_text(callback, state)
     except TelegramBadRequest:
-        await callback.message.answer('При составлении текста была допущена ошибка!')
+        await callback.message.answer('При составлении текста была допущена ошибка\!')
         await start_add_new_text(callback, state)
 
 
