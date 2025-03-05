@@ -292,16 +292,19 @@ async def date_string_to_epoch(date_string):
 @admin_router.message(F.text == 'Пользователи и статистика')
 async def get_statistic(msg: Message):
     """Выдаем статистику"""
-    date_str = str(datetime.now()).split(' ')[0]
-    today_int = await date_string_to_epoch(date_str)
-    stat = await bot_base.get_statistic(today_int)
-
     user_count = len(await bot_base.get_all_user())
-    msg_text = (f'Всего пользователей: {user_count}\n\n'
-                f'Статистика за сегодня:\n'
-                f'Заданий выполнено: {stat[1]}\n'
-                f'Звезд заработано: {stat[2] / 100}')
-    await msg.answer(msg_text, parse_mode='HTML')
+    try:
+        date_str = str(datetime.now()).split(' ')[0]
+        today_int = await date_string_to_epoch(date_str)
+        stat = await bot_base.get_statistic(today_int)
+
+        msg_text = (f'Всего пользователей: {user_count}\n\n'
+                    f'Статистика за сегодня:\n'
+                    f'Заданий выполнено: {stat[1]}\n'
+                    f'Звезд заработано: {stat[2] / 100}')
+        await msg.answer(msg_text, parse_mode='HTML')
+    except IndexError:
+        await msg.answer(f'Всего пользователей: {user_count}\n\nСегодня ничего не произошло')
 
 
 # ====================
