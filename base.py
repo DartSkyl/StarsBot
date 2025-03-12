@@ -27,15 +27,19 @@ class BotBase:
                            'last_task VARCHAR(155) DEFAULT "empty",'  # Когда последний раз выполнял задание
                            'last_ref VARCHAR(155) DEFAULT "empty",'  # Когда привел последнего реферала
                            'last_bonus VARCHAR(155) DEFAULT "empty",'  # Когда активировал бонус
-                           'bonus INTEGER DEFAULT 1);')  # Кол-во бонусов подряд, "n"
+                           'bonus INTEGER DEFAULT 1,'
+                           'username VARCHAR(155));')  # Кол-во бонусов подряд, "n"
 
             # Таблица с заданиями
             cursor.execute('CREATE TABLE IF NOT EXISTS tasks_list ('
-                           'task_id INTEGER PRIMARY KEY, '
-                           'channels_list TEXT,'
+                           'task_id VARCHAR(155) PRIMARY KEY, '
+                           'task_name TEXT, '
+                           'channel TEXT, '
+                           'channel_id INTEGER, '
                            'reward INT,  '  # Всегда делить на 100
-                           'who_complete TEXT,'
-                           'complete_count INTEGER'
+                           'who_complete TEXT, '
+                           'complete_count INTEGER, '
+                           'serial_number INTEGER UNIQUE'
                            ');')
 
             # Таблица с настройками
@@ -65,13 +69,13 @@ class BotBase:
     # ====================
 
     @staticmethod
-    async def add_new_user(user_id, referer_id):
+    async def add_new_user(user_id, referer_id, username):
         """Вставляем сразу все столбцы"""
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
 
-            cursor.execute(f'INSERT INTO all_users (user_id, referer) '
-                           f'VALUES ({user_id}, {referer_id})')
+            cursor.execute(f'INSERT INTO all_users (user_id, referer, username) '
+                           f'VALUES ({user_id}, {referer_id}, "{username}")')
 
             # И сразу посчитаем рефереру его сучку
             cursor.execute(f"UPDATE all_users "
@@ -161,21 +165,14 @@ class BotBase:
     # ====================
 
     @staticmethod
-    async def add_new_task(task_id, channels_list, reward, complete_count):
+    async def add_new_task(task_id, task_name, channel, channel_id, reward, complete_count, serial_number):
         """Вставляем новую задачу"""
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
-            cursor.execute(f'INSERT INTO tasks_list (task_id, channels_list, reward, complete_count) '
-                           f'VALUES ({task_id}, "{channels_list}", {reward}, {complete_count})')
-            connection.commit()
-
-    @staticmethod
-    async def new_executor(task_id, who_complete_str):
-        with sqlite3.connect('stars_base.db') as connection:
-            cursor = connection.cursor()
-            cursor.execute(f"UPDATE tasks_list "
-                           f"SET who_complete =  '{who_complete_str}' "
-                           f"WHERE task_id = {task_id};")
+            cursor.execute(f'INSERT INTO tasks_list (task_id, task_name, channel, '
+                           f'channel_id, reward, complete_count, serial_number) '
+                           f'VALUES ("{task_id}", "{task_name}", "{channel}", '
+                           f'{channel_id}, {reward}, {complete_count}, {serial_number});')
             connection.commit()
 
     @staticmethod
@@ -189,16 +186,43 @@ class BotBase:
     async def delete_task(task_id):
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
-            cursor.execute(f"DELETE FROM tasks_list WHERE task_id = {task_id};")
+            cursor.execute(f"DELETE FROM tasks_list WHERE task_id = '{task_id}';")
             connection.commit()
 
     @staticmethod
-    async def edit_task_channels(task_id, new_channels):
+    async def new_task_name(task_id, new_task_name):
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE tasks_list "
-                           f"SET channels_list =  '{new_channels}' "
-                           f"WHERE task_id = {task_id};")
+                           f"SET task_name =  '{new_task_name}' "
+                           f"WHERE task_id = '{task_id}';")
+            connection.commit()
+
+    @staticmethod
+    async def new_executor(task_id, who_complete_str):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE tasks_list "
+                           f"SET who_complete =  '{who_complete_str}' "
+                           f"WHERE task_id = '{task_id}';")
+            connection.commit()
+
+    @staticmethod
+    async def edit_task_channel(task_id, new_channel):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE tasks_list "
+                           f"SET channel =  '{new_channel}' "
+                           f"WHERE task_id = '{task_id}';")
+            connection.commit()
+
+    @staticmethod
+    async def edit_task_channel_id(task_id, new_channel_id):
+        with sqlite3.connect('stars_base.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute(f"UPDATE tasks_list "
+                           f"SET channel_id =  {new_channel_id} "
+                           f"WHERE task_id = '{task_id}';")
             connection.commit()
 
     @staticmethod
@@ -207,7 +231,7 @@ class BotBase:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE tasks_list "
                            f"SET reward =  '{reward}' "
-                           f"WHERE task_id = {task_id};")
+                           f"WHERE task_id = '{task_id}';")
             connection.commit()
 
     @staticmethod
@@ -216,7 +240,7 @@ class BotBase:
             cursor = connection.cursor()
             cursor.execute(f"UPDATE tasks_list "
                            f"SET complete_count =  {complete_count} "
-                           f"WHERE task_id = {task_id};")
+                           f"WHERE task_id = '{task_id}';")
             connection.commit()
 
     # ====================
@@ -242,12 +266,12 @@ class BotBase:
             return task_list[0]
 
     # ====================
-    # Сообщения
+    # Вывод звезд
     # ====================
 
     @staticmethod
     async def new_request_for_withdrawal_of_stars(user_id, username, requirement_stars):
-        """Вставляем новую задачу"""
+        """Новая заявка на вывод звезд"""
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
             cursor.execute(f'INSERT INTO stars_withdrawal (user_id, username, requirement_stars) '

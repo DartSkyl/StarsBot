@@ -10,5 +10,6 @@ main_menu_admin = ReplyKeyboardMarkup(keyboard=[
 
 task_menu = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Добавить задание'), KeyboardButton(text='Текущие задания')],
+    [KeyboardButton(text='Завершенные задания')],
     [KeyboardButton(text='Назад')]
         ], resize_keyboard=True)

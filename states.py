@@ -12,21 +12,19 @@ class UserStates(StatesGroup):
 class AdminStates(StatesGroup):
     """Класс стэйтов для админов"""
     start_new_task = State()
-    new_task_set_reward = State()
-    new_task_compete_count = State()
-    preview_new_task = State()
-    edit_channels = State()
+    task_edit_menu = State()
+    remove_task = State()
+    edit_channel = State()
+    edit_channel_id = State()
+    edit_name = State()
     edit_reward = State()
     edit_compete_count = State()
-    task_edit_menu = State()
-    edit_channels_menu = State()
-    edit_compete_count_menu = State()
-    edit_reward_menu = State()
 
     # Настройка сообщений
     msg_set_menu = State()
 
     first_contact = State()
+    subscription = State()
     main_menu_message = State()
     user_task_menu = State()
     welcome_message = State()
