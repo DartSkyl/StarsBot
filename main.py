@@ -23,7 +23,7 @@ async def start_up():
 
     with open('bot.log', 'a') as log_file:
         log_file.write(f'\n========== New bot session {datetime.datetime.now()} ==========\n\n')
-    await dp.delete_webhook()
+    await bot.delete_webhook()
     print('Стартуем')
 
     await dp.start_polling(bot)
