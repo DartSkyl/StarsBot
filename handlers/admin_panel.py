@@ -60,7 +60,7 @@ async def catch_new_channels(msg: Message, state: FSMContext):
         task_data = task.split('#')
         try:
             await task_manager.save_new_task(
-                serial_number=task_data[0],
+                serial_number=int(task_data[0]),
                 task_name=task_data[1],
                 channel=task_data[4],
                 channel_id=task_data[5] if task_data[4].startswith('https://t.me/+') else 0,
