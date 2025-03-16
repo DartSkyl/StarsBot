@@ -38,6 +38,7 @@ msg_settings_menu_main = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text='Сообщение со ссылкой и статистикой', callback_data='msg_main_menu_message')],
     [InlineKeyboardButton(text='Сообщение с "Заданием"', callback_data='msg_user_task_menu')],
     [InlineKeyboardButton(text='Сообщение с выводом звезд', callback_data='msg_stars_withdrawal')],
+    [InlineKeyboardButton(text='Сообщение с "Ежедневным бонусом"', callback_data='msg_bonus')],
 ])
 
 msg_setting_edit_func = InlineKeyboardMarkup(inline_keyboard=[

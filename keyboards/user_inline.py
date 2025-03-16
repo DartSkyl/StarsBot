@@ -17,7 +17,7 @@ async def random_keyboards(user_id, random_fruit_mass, correct_answer):
 async def user_task_menu(task_id):
     task_menu = InlineKeyboardBuilder()
     task_menu.button(text='Задание выполнено', callback_data=f'execute_{task_id}')
-    task_menu.button(text='Пропустить задание', callback_data=f'skip')
+    task_menu.button(text='Следующее задание', callback_data=f'skip')
     task_menu.adjust(1)
     return task_menu.as_markup()
 

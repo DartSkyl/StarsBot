@@ -114,7 +114,7 @@ async def current_task_list_menu(msg: Message, state: FSMContext):
     if len(all_tasks_list) > 0:
         for task in all_tasks_list:
             if not await task.check_complete_count():
-                task_msg += f'{task.serial_number} | {task.task_name} | {task.channel} | {task.channel_id}\n'
+                task_msg += f'{task.serial_number} | {task.task_name} | {task.channel} | {task.channel_id}\n\n'
         await msg.answer(task_msg, parse_mode='HTML', reply_markup=open_editor)
     else:
         await msg.answer('Список заданий пуст')
@@ -335,7 +335,7 @@ msg_dict = {
         AdminStates.user_task_menu,
         {'task_str': 'Название задания:\n'
                      'https://t\.me/horoshieludicast\n\n'
-                     'Вознаграждение: 2\.0'}
+                     'Вознаграждение: 2\.0 🌟'}
     ),
 
     'welcome_message': (
@@ -346,6 +346,10 @@ msg_dict = {
     'stars_withdrawal': (
         AdminStates.stars_withdrawal,
         {'stars_count': 123}
+    ),
+    'bonus': (
+        AdminStates.bonus,
+        {'bonus': 10}
     )
 }
 
@@ -388,6 +392,7 @@ async def start_add_new_text(callback: CallbackQuery, state: FSMContext):
 
 
 @admin_router.message(AdminStates.main_menu_message)
+@admin_router.message(AdminStates.bonus)
 @admin_router.message(AdminStates.user_task_menu)
 @admin_router.message(AdminStates.welcome_message)
 @admin_router.message(AdminStates.first_contact)

@@ -29,3 +29,4 @@ class AdminStates(StatesGroup):
     user_task_menu = State()
     welcome_message = State()
     stars_withdrawal = State()
+    bonus = State()

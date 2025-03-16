@@ -201,6 +201,8 @@ async def get_profit_to_executor(user_id, task_id):
         await bot_base.star_rating(referer_id, (task.reward / 100 * ref_percent))
         await bot_base.stars_count(task.reward / 100 * ref_percent)
 
+    return task.reward
+
 
 async def escape_special_chars(text):
     """Экранирует все специальные символы в строке."""
@@ -226,7 +228,7 @@ async def open_user_task_menu(msg: Message, state: FSMContext):
                 await state.set_state(UserStates.executor)
 
                 task_str = (f'{task.task_name}:\n{task.channel}\n\n'
-                            f'Вознаграждение: {int(task.reward) / 100}\n\n')
+                            f'Вознаграждение: {int(task.reward) / 100} 🌟\n\n')
                 task_str = await escape_special_chars(task_str)
                 msg_text = (await bot_base.settings_get('user_task_menu'))[1]
                 msg_text = await forming_str_from_txt_file(msg_text, task_str=task_str)
@@ -255,9 +257,9 @@ async def check_user_task_complete(callback: CallbackQuery, state: FSMContext):
 
         if check_execute:  # Значит выполнил
             await callback.answer()
-            await get_profit_to_executor(callback.from_user.id, task_id)
+            reward = await get_profit_to_executor(callback.from_user.id, task_id)
 
-            await callback.message.edit_text('Задание выполнено')
+            await callback.message.edit_text(f'Задание выполнено\nТы заработал {reward / 100} 🌟', parse_mode='HTML')
             await skip_task(callback, state)
 
         else:
@@ -275,9 +277,8 @@ async def skip_task(callback: CallbackQuery, state: FSMContext):
             if not await task.check_execute(callback.from_user.id) and not await task.check_complete_count():
                 await state.update_data({'task_id': task.task_id, 'task_generator': task_generator})
 
-                # task_channels_str = '\n'.join(task.channels_list)
-                task_str = (f'{task.task_name}:\n\n{task.channel}\n\n'
-                            f'Вознаграждение: {int(task.reward) / 100}\n\n')
+                task_str = (f'{task.task_name}:\n{task.channel}\n\n'
+                            f'Вознаграждение: {int(task.reward) / 100} 🌟\n\n')
                 task_str = await escape_special_chars(task_str)
                 msg_text = (await bot_base.settings_get('user_task_menu'))[1]
                 msg_text = await forming_str_from_txt_file(msg_text, task_str=task_str)
@@ -326,7 +327,9 @@ async def daily_bonus(msg: Message):
         await bot_base.stars_count(bonus)
         await bot_base.set_last_bonus(user_info[0])
         await bot_base.set_bonus(user_info[0], bonus + 1)
-        msg_text = f'Порядковый номер сегодняшнего бонуса: {bonus}\n'
+        msg_text = (await bot_base.settings_get('bonus'))[1]
+        msg_text = await forming_str_from_txt_file(msg_text, bonus=bonus / 100)
+        # msg_text = f'Порядковый номер сегодняшнего бонуса: {bonus / 100}\n'
 
     elif user_info[5] != today and user_info[6] != today:
         msg_text = ('Для активации ежедневного бонуса нужно выполнить хоть одно задание '
@@ -334,7 +337,7 @@ async def daily_bonus(msg: Message):
     else:
         msg_text = 'Сегодняшний бонус получен'
 
-    await msg.answer(msg_text)
+    await msg.answer(msg_text.replace('.', '\.'))
 
 
 # ====================
@@ -366,7 +369,8 @@ async def forming_request_for_withdrawal_stars(callback: CallbackQuery):
     if user_stars >= requirement_stars:
         if callback.from_user.username:
             await bot_base.new_request_for_withdrawal_of_stars(callback.from_user.id, callback.from_user.username, requirement_stars)
-            await callback.message.answer('Заявка на вывод звезд сформирована\!')
+            await callback.message.answer('Заявка на вывод звезд сформирована\! '
+                                          'Перевод будет осуществлен в течении трех дней\.')
         else:
             await callback.message.answer('Перед выводом необходимо установить "Имя пользователя"\n'
                                           'Для этого зайдите в "Настройки", а затем в меню "Мой аккаунт"')
