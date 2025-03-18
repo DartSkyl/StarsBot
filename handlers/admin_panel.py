@@ -238,7 +238,7 @@ async def view_complete_tasks(msg: Message, state: FSMContext):
     if len(all_tasks_list) > 0:
         for task in all_tasks_list:
             if await task.check_complete_count():
-                task_msg += f'{task.serial_number} | {task.task_name} | {task.channel} | {task.channel_id}\n'
+                task_msg += f'{task.serial_number} | {task.task_name} | {task.channel} | {task.channel_id}\n\n'
         await msg.answer(task_msg, parse_mode='HTML', reply_markup=open_editor)
     else:
         await msg.answer('Список заданий пуст')
