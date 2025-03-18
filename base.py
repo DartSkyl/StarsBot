@@ -179,7 +179,7 @@ class BotBase:
     async def get_all_tasks():
         with sqlite3.connect('stars_base.db') as connection:
             cursor = connection.cursor()
-            task_list = cursor.execute(f'SELECT * FROM tasks_list;').fetchall()
+            task_list = cursor.execute(f'SELECT * FROM tasks_list ORDER BY serial_number;').fetchall()
             return task_list
 
     @staticmethod
