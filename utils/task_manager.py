@@ -4,6 +4,7 @@ from random import choices
 import string
 
 from aiogram.types import ChatMemberLeft
+from aiogram.exceptions import TelegramBadRequest
 
 from loader import bot_base, bot
 
@@ -128,17 +129,23 @@ class TaskList:
         """Проверяем выполнение задания конкретным исполнителем."""
         for task in self.content_list:
             if task_id == task.task_id:
-                if not task.channel.startswith('https://t.me/+'):
-                    channel = task.channel.replace('https://t.me/', '@')
-                else:
-                    channel = task.channel_id
-                is_execute = await bot.get_chat_member(
-                    chat_id=channel,
-                    user_id=user_id
-                )
-                if not isinstance(is_execute, ChatMemberLeft):  # Значит подписан
-                    return True
-                return False
+                try:
+                    if not task.channel.startswith('https://t.me/+'):
+                        channel = task.channel.replace('https://t.me/', '@')
+                    else:
+                        channel = task.channel_id
+                    is_execute = await bot.get_chat_member(
+                        chat_id=channel,
+                        user_id=user_id
+                    )
+                    if not isinstance(is_execute, ChatMemberLeft):  # Значит подписан
+                        return True
+                    return False
+                except TelegramBadRequest as e:
+                    print(e)
+                    print(task.channel_id)
+                    print()
+
 
     async def save_new_task(
             self,
