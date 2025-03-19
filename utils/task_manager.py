@@ -146,7 +146,6 @@ class TaskList:
                     print(task.channel_id)
                     print()
 
-
     async def save_new_task(
             self,
             task_name: str,
