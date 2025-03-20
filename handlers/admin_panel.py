@@ -34,6 +34,12 @@ async def admin_help(msg: Message):
     await msg.answer(msg_text, parse_mode='HTML')
 
 
+@admin_router.message(Command('dice'))
+async def dice_prob(msg: Message):
+    for i in range(3):
+        await msg.answer_dice()
+
+
 # ====================
 # Добавление нового задания
 # ====================
