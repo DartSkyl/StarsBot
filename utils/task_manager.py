@@ -138,6 +138,7 @@ class TaskList:
                         chat_id=channel,
                         user_id=user_id
                     )
+                    print(type(is_execute))
                     if not isinstance(is_execute, ChatMemberLeft):  # Значит подписан
                         return True
                     return False
