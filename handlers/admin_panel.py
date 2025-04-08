@@ -6,7 +6,8 @@ from aiogram.filters import Command
 from aiogram import F
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
-from sqlite3 import IntegrityError
+from asyncpg.exceptions import UndefinedColumnError
+
 
 from utils.admin_router import admin_router
 from utils.task_manager import task_manager
@@ -75,8 +76,8 @@ async def catch_new_channels(msg: Message, state: FSMContext):
             )
         except IndexError:
             await msg.answer(f'Ошибка в строке:\n{task}', parse_mode='HTML')
-        except IntegrityError:
-            await msg.answer(f'Такой порядковый номер уже есть:\n{task}', parse_mode='HTML')
+        # except IntegrityError:
+        #     await msg.answer(f'Такой порядковый номер уже есть:\n{task}', parse_mode='HTML')
     await msg.answer('Добавление новых заданий завершено')
     await state.clear()
 
@@ -377,7 +378,7 @@ async def edit_mode_for_message(callback: CallbackQuery, state: FSMContext):
     msg_path = f'{callback.data.replace("msg_", "")}'
     await state.set_data({'msg': msg_path})
     try:
-        msg_text = (await bot_base.settings_get(msg_path))[1]
+        msg_text = (await bot_base.settings_get(msg_path))['set_content']
         msg_text = await forming_str_from_txt_file(msg_text, kwargs=msg_dict[msg_path][1])
 
         await callback.message.answer(msg_text, reply_markup=msg_setting_edit_func)

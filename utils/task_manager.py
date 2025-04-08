@@ -130,18 +130,21 @@ class TaskList:
         for task in self.content_list:
             if task_id == task.task_id:
                 try:
-                    if not task.channel.startswith('https://t.me/+'):
-                        channel = task.channel.replace('https://t.me/', '@')
+                    if task.channel != 'https://t.me/CyberLaboratory_Bot':
+                        if not task.channel.startswith('https://t.me/+'):
+                            channel = task.channel.replace('https://t.me/', '@')
+                        else:
+                            channel = task.channel_id
+                        is_execute = await bot.get_chat_member(
+                            chat_id=channel,
+                            user_id=user_id
+                        )
+                        print(type(is_execute))
+                        if not isinstance(is_execute, ChatMemberLeft):  # Значит подписан
+                            return True
+                        return False
                     else:
-                        channel = task.channel_id
-                    is_execute = await bot.get_chat_member(
-                        chat_id=channel,
-                        user_id=user_id
-                    )
-                    print(type(is_execute))
-                    if not isinstance(is_execute, ChatMemberLeft):  # Значит подписан
-                        return True
-                    return False
+                        return await bot_base.check_task_complete(user_id)
                 except TelegramBadRequest as e:
                     print(e)
                     print(task.channel_id)

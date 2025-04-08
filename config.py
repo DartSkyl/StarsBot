@@ -13,6 +13,15 @@ ADMINS = {int(i) for i in os.getenv('admins_id').split()}
 MAIN_CHANNEL = os.getenv('main_channel')
 BOT_USERNAME = os.getenv('bot_username')
 
+DB_INFO = (
+    os.getenv('db_user'),
+    os.getenv('db_pass'),
+    os.getenv('db_name'),
+    os.getenv('db_host')
+)
+
+PG_URI = f'postgresql+psycopg2://{DB_INFO[0]}:{DB_INFO[1]}@{DB_INFO[3]}/{DB_INFO[2]}'
+
 # logging.basicConfig(
 #     filename='bot.log',
 #     filemode='a',
