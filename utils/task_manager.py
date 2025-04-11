@@ -11,16 +11,6 @@ from loader import bot_base, bot
 
 class TaskModel:
     """Класс для реализации контейнера для "Заданий" """
-
-    # def __init__(self, channels_list: List[str], reward: int, task_id: int, complete_count: int, who_complete=None):
-    #     self.task_id: int = task_id  # Каждый ID это секунды создания
-    #     # Список для каналов на которые нужно подписаться для выполнения задания
-    #     self.channels_list: List[str] = channels_list
-    #     self.reward: int = reward  # Вознаграждение
-    #     self.complete_count: int = complete_count
-    #     # Множество с теми, кто выполнил задание
-    #     self.who_complete: set = who_complete if who_complete and '' not in who_complete else set()
-
     def __init__(
             self,
             task_id: str,
@@ -130,7 +120,7 @@ class TaskList:
         for task in self.content_list:
             if task_id == task.task_id:
                 try:
-                    if task.channel != 'https://t.me/CyberLaboratory_Bot':
+                    if task.channel != 'https://t.me/Star_Prizebot':
                         if not task.channel.startswith('https://t.me/+'):
                             channel = task.channel.replace('https://t.me/', '@')
                         else:
